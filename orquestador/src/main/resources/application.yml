@@ -1,0 +1,27 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: orquestador
+
+# ========================================================
+# CONFIGURACIÓN DE SWAGGER PARA EL ORQUESTADOR
+# ========================================================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  # Desactivamos el escaneo automático de HATEOAS para evitar el error de Spring Boot 4
+  hateoas:
+    enabled: false
+
+# Configuración personalizada para las URLs de los microservicios de negocio
+# Apuntamos directamente a los puertos internos de forma eficiente
+microservices:
+  cliente-url: ${MICROSERVICES_CLIENTE_URL:http://localhost:8081/api/v1/clientes}
+  mascota-url: ${MICROSERVICES_MASCOTA_URL:http://localhost:8082/api/v1/mascotas}
+  veterinario-url: ${MICROSERVICES_VETERINARIO_URL:http://localhost:8083/api/v1/veterinarios}
+  atencion-url: ${MICROSERVICES_ATENCION_URL:http://localhost:8085/api/v1/atenciones}
+  vacuna-url: ${MICROSERVICES_VACUNA_URL:http://localhost:8086/api/v1/vacunas}

@@ -1,0 +1,140 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        # 1. Ruta de Autenticación (Público)
+        - id: auth
+          uri: http://${AUTH_HOST:localhost}:8084
+          predicates:
+            - Path=/api/v1/auth/**
+
+        # 2. Ruta de Clientes (Protegido)
+        - id: cliente
+          uri: http://${CLIENTE_HOST:localhost}:8081
+          predicates:
+            - Path=/api/v1/clientes/**
+          filters:
+            - AuthenticationFilter
+
+        # 3. Ruta de Mascotas (Protegido)
+        - id: mascota
+          uri: http://${MASCOTA_HOST:localhost}:8082
+          predicates:
+            - Path=/api/v1/mascotas/**
+          filters:
+            - AuthenticationFilter
+
+        # 4. Ruta de Veterinarios (Protegido)
+        - id: veterinario
+          uri: http://${VETERINARIO_HOST:localhost}:8083
+          predicates:
+            - Path=/api/v1/veterinarios/**
+          filters:
+            - AuthenticationFilter
+
+        # 5. Ruta de Atenciones (Protegido)
+        - id: atencion
+          uri: http://${ATENCION_HOST:localhost}:8085
+          predicates:
+            - Path=/api/v1/atenciones/**
+          filters:
+            - AuthenticationFilter
+
+        # 6. Ruta de Vacunas (Protegido)
+        - id: vacuna
+          uri: http://${VACUNA_HOST:localhost}:8086
+          predicates:
+            - Path=/api/v1/vacunas/**
+          filters:
+            - AuthenticationFilter
+
+        # 7. Orquestador (Protegido)
+        - id: orquestador
+          uri: http://${ORQUESTADOR_HOST:localhost}:8088
+          predicates:
+            - Path=/api/v1/consultas/**
+          filters:
+            - AuthenticationFilter
+
+        # ========================================================
+        # RUTAS PÚBLICAS PARA SWAGGER/OPENAPI (RewritePath)
+        # ========================================================
+        - id: clientes-openapi-docs
+          uri: http://${CLIENTE_HOST:localhost}:8081
+          predicates:
+            - Path=/v3/api-docs/clientes
+          filters:
+            - RewritePath=/v3/api-docs/clientes, /v3/api-docs
+
+        - id: mascotas-openapi-docs
+          uri: http://${MASCOTA_HOST:localhost}:8082
+          predicates:
+            - Path=/v3/api-docs/mascotas
+          filters:
+            - RewritePath=/v3/api-docs/mascotas, /v3/api-docs
+
+        - id: auth-openapi-docs
+          uri: http://${AUTH_HOST:localhost}:8084
+          predicates:
+            - Path=/v3/api-docs/auth
+          filters:
+            - RewritePath=/v3/api-docs/auth, /v3/api-docs
+
+        - id: veterinarios-openapi-docs
+          uri: http://${VETERINARIO_HOST:localhost}:8083
+          predicates:
+            - Path=/v3/api-docs/veterinarios
+          filters:
+            - RewritePath=/v3/api-docs/veterinarios, /v3/api-docs
+
+        - id: atenciones-openapi-docs
+          uri: http://${ATENCION_HOST:localhost}:8085
+          predicates:
+            - Path=/v3/api-docs/atenciones
+          filters:
+            - RewritePath=/v3/api-docs/atenciones, /v3/api-docs
+
+        - id: vacunas-openapi-docs
+          uri: http://${VACUNA_HOST:localhost}:8086
+          predicates:
+            - Path=/v3/api-docs/vacunas
+          filters:
+            - RewritePath=/v3/api-docs/vacunas, /v3/api-docs
+
+        - id: orquestador-openapi-docs
+          uri: http://${ORQUESTADOR_HOST:localhost}:8088
+          predicates:
+            - Path=/v3/api-docs/orquestador
+          filters:
+            - RewritePath=/v3/api-docs/orquestador, /v3/api-docs
+
+# ========================================================
+# CONFIGURACIÓN GLOBAL DE SWAGGER AGREGADO
+# ========================================================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: "1. Microservicio Clientes"
+        url: /v3/api-docs/clientes
+      - name: "2. Microservicio Mascotas"
+        url: /v3/api-docs/mascotas
+      - name: "3. Microservicio Autenticación"
+        url: /v3/api-docs/auth
+      - name: "4. Orquestador Clínico"
+        url: /v3/api-docs/orquestador
+      - name: "5. Microservicio Veterinarios"
+        url: /v3/api-docs/veterinarios
+      - name: "6. Microservicio Atenciones"
+        url: /v3/api-docs/atenciones
+      - name: "7. Microservicio Vacunas"
+        url: /v3/api-docs/vacunas
+
+jwt:
+  secret: "EstaEsUnaClaveSuperSecretaYUltraSeguraParaElProyectoVetCare2026!"

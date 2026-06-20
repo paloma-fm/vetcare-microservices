@@ -1,0 +1,202 @@
+version: '3.8'
+
+networks:
+  vetcare-network:
+    driver: bridge
+
+services:
+
+  # ============================================================
+  # BASE DE DATOS MYSQL COMPARTIDA
+  # Crea todas las bases de datos al iniciar por primera vez
+  # ============================================================
+  mysql:
+    image: mysql:8.0
+    container_name: vetcare-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: vetcare_clientes
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - vetcare-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ============================================================
+  # MICROSERVICIO AUTH (puerto 8084)
+  # ============================================================
+  auth:
+    build:
+      context: ./auth
+    container_name: vetcare-auth
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO CLIENTE (puerto 8081)
+  # ============================================================
+  cliente:
+    build:
+      context: ./cliente
+    container_name: vetcare-cliente
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vetcare_clientes?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO MASCOTA (puerto 8082)
+  # ============================================================
+  mascota:
+    build:
+      context: ./mascota
+    container_name: vetcare-mascota
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vetcare_mascotas?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO VETERINARIO (puerto 8083)
+  # ============================================================
+  veterinario:
+    build:
+      context: ./veterinario
+    container_name: vetcare-veterinario
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vetcare_veterinarios?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO ATENCION (puerto 8085)
+  # ============================================================
+  atencion:
+    build:
+      context: ./atencion
+    container_name: vetcare-atencion
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vetcare_atenciones?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO VACUNA (puerto 8086)
+  # ============================================================
+  vacuna:
+    build:
+      context: ./vacuna
+    container_name: vetcare-vacuna
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vetcare_vacunas?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks:
+      - vetcare-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ============================================================
+  # MICROSERVICIO ORQUESTADOR (puerto 8088)
+  # Apunta a los demás servicios usando sus nombres de contenedor
+  # ============================================================
+  orquestador:
+    build:
+      context: ./orquestador
+    container_name: vetcare-orquestador
+    ports:
+      - "8088:8088"
+    environment:
+      MICROSERVICES_CLIENTE_URL: http://cliente:8081/api/v1/clientes
+      MICROSERVICES_MASCOTA_URL: http://mascota:8082/api/v1/mascotas
+      MICROSERVICES_VETERINARIO_URL: http://veterinario:8083/api/v1/veterinarios
+      MICROSERVICES_ATENCION_URL: http://atencion:8085/api/v1/atenciones
+      MICROSERVICES_VACUNA_URL: http://vacuna:8086/api/v1/vacunas
+    networks:
+      - vetcare-network
+    depends_on:
+      - auth
+      - cliente
+      - mascota
+      - veterinario
+      - atencion
+      - vacuna
+
+  # ============================================================
+  # API GATEWAY (puerto 8080) — Punto de entrada único
+  # Reemplaza localhost por nombres de contenedor en las rutas
+  # ============================================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: vetcare-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_HOST: auth
+      CLIENTE_HOST: cliente
+      MASCOTA_HOST: mascota
+      VETERINARIO_HOST: veterinario
+      ATENCION_HOST: atencion
+      VACUNA_HOST: vacuna
+      ORQUESTADOR_HOST: orquestador
+    networks:
+      - vetcare-network
+    depends_on:
+      - auth
+      - cliente
+      - mascota
+      - veterinario
+      - atencion
+      - vacuna
+      - orquestador
+
+volumes:
+  mysql_data:

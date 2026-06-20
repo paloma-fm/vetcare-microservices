@@ -1,0 +1,34 @@
+server:
+  port: 8084 # Puerto exclusivo para el microservicio de autenticación
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth?createDatabaseIfNotExist=true&serverTimezone=UTC
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update # Esto creará la tabla 'usuarios' automáticamente en tu MySQL
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# ========================================================
+# CONFIGURACIÓN DE SPRINGDOC ABIERTA EN YAML
+# ========================================================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# Configuración de tu firma criptográfica
+jwt:
+  secret: "EstaEsUnaClaveSuperSecretaYUltraSeguraParaElProyectoVetCare2026!"
+  expiration: 3600000 # El token durará 1 hora activo
